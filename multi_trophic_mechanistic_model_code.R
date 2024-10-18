@@ -43,7 +43,7 @@ fM <- 1.5 #maximum fecundity for moose (average number of offspring per individu
 eM <- 0.6 # asymptotic kiiL rate on moose (animal/ha)
 mM <- 0 #hunting rate on moose
 mW <- 0 #hunting rate on wolf
-b <- 0.38 #upper limit of annual rate of increase
+b <- 0.8 #upper limit of annual rate of increase
 g <- 0.38 #wolf death rate
 dC <- 460 #depredation efficiency on caribou (animal/ha; prey density at half the asymptotic kiiL rate)
 dM <- 46 #predation efficiency on moose (animal/ha; prey density at half the asymptotic kiiL rate)
@@ -61,12 +61,13 @@ population_initial <- within(population_initial,{
   W[1] <- 8 #wolf density (animals/ha)
 })
 
+
 # calculate populations
 for(t in 2:n_steps){
   population_initial <- within(population_initial,{
     #Primary producers - plants
     plant_birth <- sP * P[t-1] * (1-(P[t-1]/Kp))
-    plant_death <- (C[t+1] * lP * P[t-1])/(hp + P[t-1])
+    plant_death <- (C[t-1] * lP * P[t-1])/(hp + P[t-1])
     P[t] <- max(0,P[t-1] + plant_birth - plant_death) #plants consumed by Caribou - the max is used to avoid negative values
     
     #Primary producers - lichen
@@ -91,9 +92,15 @@ for(t in 2:n_steps){
     M[t] <- max(0,M[t-1] + moose_growth - moose_death - moose_predation)
     
     # Third trophic level - Wolf
-    wolf_growth <- (W[t-1] * b * ((C[t-1]/(C[t-1] + dC)) + (M[t-1]/(M[t-1] + dM))))
+    wolf_growth <- W[t-1] * b * ((C[t-1]/(C[t-1] + dC)) + (M[t-1]/(M[t-1] + dM)))
     wolf_death <- W[t-1] * g
     W[t] <- max(0,W[t-1] + wolf_growth - wolf_death)
+  
+    # Predator
+    # W.growth <- (b*(C[t-1]/(dC+C[t-1])) + b*(M[t-1]/(dM+M[t-1])))*W[t-1]
+    # W.death <- g*W[t-1]
+    # W[t] <- max(0,W[t-1] + W.growth - W.death)
+      
   })
 }
 
@@ -112,3 +119,46 @@ ggplot(data = population_initial)+
   labs(x = "Time", y = "Densities", color="Legend",title="Original model")+
   scale_color_manual(values = colours) +
   theme_bw()
+
+
+# Q1. Now set the initial populations to 0 and run the model. What happens?
+population_initial <- within(population_initial,{
+  P[1] <- 240 #plant biomass density (kg/ha)
+  L[1] <- 870 #lichen biomas density (kg/ha)
+  H[1] <- 970 #moose forage biomass density (kg/ha)
+  C[1] <- 0 #caribou density (animals/ha)
+  M[1] <- 0 #moose density (animals/ha)
+  W[1] <- 0 #wolf density (animals/ha)
+})
+#     All plant species remain at a constant level, the animal species never
+#     have any individuals.
+
+#Q2. Set the caribou and moose populations to the values in the table. How are
+#    the two species doing?
+population_initial <- within(population_initial,{
+  P[1] <- 240 #plant biomass density (kg/ha)
+  L[1] <- 870 #lichen biomas density (kg/ha)
+  H[1] <- 970 #moose forage biomass density (kg/ha)
+  C[1] <- 7 #caribou density (animals/ha)
+  M[1] <- 25 #moose density (animals/ha)
+  W[1] <- 0 #wolf density (animals/ha)
+})
+#    Plants remain consistent throughout, at a lower density than the other
+#    producers. Lichen show large oscillation. Shrubs show a little decline and
+#    oscillation before settling on a constant level. Both moose and caribou
+#    show an initial increase, before levelling off. Caribou a bit less stable
+#    than moose. More moose are supported than Caribou. 
+
+# Q3. Now set the wolf initial population to the one given in the table. What
+#     happens to the moose and caribou populations. Which one is more impacted?
+population_initial <- within(population_initial,{
+  P[1] <- 240 #plant biomass density (kg/ha)
+  L[1] <- 870 #lichen biomas density (kg/ha)
+  H[1] <- 970 #moose forage biomass density (kg/ha)
+  C[1] <- 7 #caribou density (animals/ha)
+  M[1] <- 25 #moose density (animals/ha)
+  W[1] <- 8 #wolf density (animals/ha)
+})
+#     Similar k for each of the species. But grass now also shows oscillations.
+#     Very little change in moose and caribou, because wolves very quickly
+#     decline to extinction. But Caribou o
